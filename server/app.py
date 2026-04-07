@@ -6,6 +6,7 @@ app = FastAPI()
 
 env = HRInterviewEnv()
 
+
 @app.post("/reset")
 def reset(data: Optional[Dict] = None):
     data = data or {}
@@ -17,6 +18,7 @@ def reset(data: Optional[Dict] = None):
         "state": obs
     }
 
+
 @app.post("/step")
 def step(action: Dict):
     obs, reward, done, info = env.step(action)
@@ -27,7 +29,13 @@ def step(action: Dict):
         "done": done,
         "info": info
     }
+
+
+# ✅ VERY IMPORTANT (indent correct ah irukanum)
 def main():
-    return app  
-    if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server.app:app", host="0.0.0.0", port=7860)
+
+
+if __name__ == "__main__":
     main()
