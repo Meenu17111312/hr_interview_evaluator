@@ -28,4 +28,6 @@ def step(action: Dict):
         "info": info
     }
 def main():
-    return app    
+    return app  
+    if __name__ == "__main__":
+    main()
