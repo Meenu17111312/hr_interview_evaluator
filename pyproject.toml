@@ -2,6 +2,7 @@
 name = "hr-interview-evaluator"
 version = "0.1.0"
 description = "HR Interview Evaluator Agent"
+
 dependencies = [
     "fastapi",
     "uvicorn",
