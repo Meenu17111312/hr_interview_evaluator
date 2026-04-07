@@ -22,6 +22,7 @@ hr_env/
 ├── openenv.yaml    # Environment metadata
 ├── Dockerfile      # Container definition
 └── README.md
+app_file: app.py
 ```
 ---
 🎮 Game Loop
