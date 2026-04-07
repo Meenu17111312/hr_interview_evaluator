@@ -1,0 +1,69 @@
+name: HRInterviewEvaluator-v1
+version: "1.0.0"
+description: >
+  An OpenEnv-compatible reinforcement learning environment that simulates
+  HR interview evaluation. An AI agent reads a question + candidate answer
+  and predicts a quality score. The environment grades the answer using a
+  keyword/explanation/clarity rubric and rewards the agent based on how
+  close its predicted score is to the ground-truth.
+
+author: HR-AI Team
+license: MIT
+
+environment:
+  entry_point: env.py
+  class: HRInterviewEnv
+
+observation_space:
+  task_id:    integer
+  difficulty: string   # easy | medium | hard
+  question:   string
+  answer:     string
+
+action_space:
+  score:
+    type: float
+    min: 0.0
+    max: 1.0
+
+reward:
+  type: float
+  range: [0.0, 1.0]
+  formula: "1.0 - |ai_score - ground_truth_score|"
+
+tasks:
+  - id: 1
+    difficulty: easy
+    description: "Basic factual question — What is Python?"
+    expected_score_range: [0.70, 1.00]
+
+  - id: 2
+    difficulty: medium
+    description: "Concept explanation — Explain Machine Learning"
+    expected_score_range: [0.75, 1.00]
+
+  - id: 3
+    difficulty: hard
+    description: "Real interview answer — describe a challenging project"
+    expected_score_range: [0.80, 1.00]
+
+grader:
+  components:
+    - name: keyword_score
+      description: Fraction of expected domain keywords found in the answer
+    - name: explanation_score
+      description: Depth and length heuristic scaled to task difficulty
+    - name: clarity_score
+      description: Sentence structure, avg length, absence of filler words
+  formula: |
+    score = keyword_score  * keyword_weight
+          + explanation_score * explanation_weight
+          + clarity_score  * clarity_weight
+
+dependencies:
+  python: ">=3.8"
+  packages: []   # stdlib only; no pip requirements
+
+inference:
+  entry_point: inference.py
+  api: Anthropic Claude (claude-sonnet-4-20250514)
