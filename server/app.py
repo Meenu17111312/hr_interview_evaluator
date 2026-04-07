@@ -27,3 +27,5 @@ def step(action: Dict):
         "done": done,
         "info": info
     }
+def main():
+    return app    
