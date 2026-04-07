@@ -60,11 +60,11 @@ def get_ai_score(client, model, question: str, answer: str):
 
 def run():
     client = OpenAI(
-        api_key=os.getenv("OPENAI_API_KEY"),
-        base_url=os.getenv("API_BASE_URL", "https://api.openai.com/v1"),
-    )
+    api_key=os.getenv("HF_TOKEN", ""),
+    base_url=os.getenv("API_BASE_URL", "https://api-inference.huggingface.co/v1"),
+)
 
-    model = os.getenv("MODEL_NAME", "gpt-4o-mini")
+    model = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")
 
     env = HRInterviewEnv(shuffle=False)
     task_ids = [t["id"] for t in env.available_tasks()]
