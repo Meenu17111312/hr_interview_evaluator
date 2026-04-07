@@ -12,5 +12,6 @@ COPY . /app/
 # Set Python path so imports resolve correctly
 ENV PYTHONPATH=/app
 
-# Default: run the agent
-CMD ["python", "inference.py"]
+RUN pip install fastapi uvicorn
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
