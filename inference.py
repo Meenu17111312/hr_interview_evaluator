@@ -1,42 +1,40 @@
+import os
+from openai import OpenAI
 from env import HRInterviewEnv
 
 
-def get_ai_score(question: str, answer: str):
-    answer_lower = answer.lower()
-    question_words = set(question.lower().split())
-    answer_words = set(answer_lower.split())
+def get_llm_score(client, model, question, answer):
+    prompt = f"""
+    Evaluate this answer for the question.
 
-    common = question_words.intersection(answer_words)
-    keyword_score = len(common) / len(question_words) if question_words else 0
+    Question: {question}
+    Answer: {answer}
 
-    word_count = len(answer.split())
-    length_score = min(word_count / 80, 1.0)
+    Give a score between 0 and 1.
+    Only return a number.
+    """
 
-    depth_words = ["because", "example", "explain", "process", "method", "approach"]
-    depth_score = sum(1 for w in depth_words if w in answer_lower) / len(depth_words)
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+        )
 
-    clarity_score = 1.0 if "." in answer else 0.7
+        score = float(response.choices[0].message.content.strip())
+        return max(0.0, min(score, 1.0))
 
-    score = (
-        0.5 * keyword_score +
-        0.2 * length_score +
-        0.2 * depth_score +
-        0.1 * clarity_score
-    )
-
-    if word_count > 200:
-        score -= 0.1
-
-    if keyword_score > 0.9 and length_score < 0.2:
-        score -= 0.2
-
-    score = 0.4 + (0.6 * score)
-    score = round(min(max(score, 0.0), 1.0), 4)
-
-    return score
+    except:
+        return 0.5  # fallback
 
 
 def run():
+    client = OpenAI(
+        base_url=os.environ["API_BASE_URL"],
+        api_key=os.environ["API_KEY"]
+    )
+
+    model = "gpt-4o-mini"
+
     env = HRInterviewEnv(shuffle=False)
     tasks = env.available_tasks()
 
@@ -52,7 +50,12 @@ def run():
         total_score = 0
 
         while not done:
-            score = get_ai_score(obs["question"], obs["answer"])
+            score = get_llm_score(
+                client,
+                model,
+                obs["question"],
+                obs["answer"]
+            )
 
             obs, reward, done, info = env.step({"score": score})
 
