@@ -2,15 +2,12 @@
 inference.py — HR Interview Evaluator Agent Runner (Hackathon-compliant)
 """
 
-import os
-from openai import OpenAI
-
 from env import HRInterviewEnv
 
 
 # ── Scoring Function ─────────────────────────────────────────
 
-def get_ai_score(client, model, question: str, answer: str):
+def get_ai_score(question: str, answer: str):
     """Advanced hybrid scoring (hackathon-ready)"""
 
     answer_lower = answer.lower()
@@ -59,13 +56,6 @@ def get_ai_score(client, model, question: str, answer: str):
 # ── Main Runner ─────────────────────────────────────────────
 
 def run():
-    client = OpenAI(
-    api_key=os.getenv("HF_TOKEN", ""),
-    base_url=os.getenv("API_BASE_URL", "https://api-inference.huggingface.co/v1"),
-)
-
-    model = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")
-
     env = HRInterviewEnv(shuffle=False)
     task_ids = [t["id"] for t in env.available_tasks()]
     diff_name = {1: "Easy", 2: "Medium", 3: "Hard"}
@@ -77,16 +67,15 @@ def run():
     for task_id in task_ids:
         obs = env.reset(task_id=task_id)
 
-        # ✅ Get score + breakdown
+        # ✅ scoring (NO external API)
         ai_score, keyword_score, length_score, depth_score = get_ai_score(
-            client, model, obs["question"], obs["answer"]
+            obs["question"], obs["answer"]
         )
 
         _obs, reward, done, info = env.step({"score": ai_score})
 
         label = diff_name.get(task_id, f"Task {task_id}")
 
-        # ✅ Debug print (now works)
         print(f"Task {task_id} ({label}) Score: {ai_score:.2f}")
         print(f" → keyword:{keyword_score:.2f}, length:{length_score:.2f}, depth:{depth_score:.2f}\n")
 
