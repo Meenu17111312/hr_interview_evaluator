@@ -1,35 +1,22 @@
-"""
-inference.py — HR Interview Evaluator Agent Runner (Hackathon-compliant)
-"""
-
 from env import HRInterviewEnv
 
 
-# ── Scoring Function ─────────────────────────────────────────
-
 def get_ai_score(question: str, answer: str):
-    """Advanced hybrid scoring (hackathon-ready)"""
-
     answer_lower = answer.lower()
     question_words = set(question.lower().split())
     answer_words = set(answer_lower.split())
 
-    # --- KEYWORD MATCH ---
     common = question_words.intersection(answer_words)
     keyword_score = len(common) / len(question_words) if question_words else 0
 
-    # --- LENGTH SCORE ---
     word_count = len(answer.split())
     length_score = min(word_count / 80, 1.0)
 
-    # --- DEPTH SCORE ---
     depth_words = ["because", "example", "explain", "process", "method", "approach"]
     depth_score = sum(1 for w in depth_words if w in answer_lower) / len(depth_words)
 
-    # --- CLARITY ---
     clarity_score = 1.0 if "." in answer else 0.7
 
-    # --- BASE SCORE ---
     score = (
         0.5 * keyword_score +
         0.2 * length_score +
@@ -37,55 +24,47 @@ def get_ai_score(question: str, answer: str):
         0.1 * clarity_score
     )
 
-    # --- ANTI-CHEATING ---
     if word_count > 200:
         score -= 0.1
 
     if keyword_score > 0.9 and length_score < 0.2:
         score -= 0.2
 
-    # --- NORMALIZATION ---
     score = 0.4 + (0.6 * score)
-
-    # --- FINAL ---
     score = round(min(max(score, 0.0), 1.0), 4)
 
-    return score, keyword_score, length_score, depth_score
+    return score
 
-
-# ── Main Runner ─────────────────────────────────────────────
 
 def run():
     env = HRInterviewEnv(shuffle=False)
-    task_ids = [t["id"] for t in env.available_tasks()]
-    diff_name = {1: "Easy", 2: "Medium", 3: "Hard"}
+    tasks = env.available_tasks()
 
-    print("Running HR Interview Evaluator...\n")
+    for t in tasks:
+        task_id = t["id"]
 
-    total_score = 0.0
+        print(f"[START] task={task_id}", flush=True)
 
-    for task_id in task_ids:
         obs = env.reset(task_id=task_id)
 
-        # ✅ scoring (NO external API)
-        ai_score, keyword_score, length_score, depth_score = get_ai_score(
-            obs["question"], obs["answer"]
-        )
+        done = False
+        steps = 0
+        total_score = 0
 
-        _obs, reward, done, info = env.step({"score": ai_score})
+        while not done:
+            score = get_ai_score(obs["question"], obs["answer"])
 
-        label = diff_name.get(task_id, f"Task {task_id}")
+            obs, reward, done, info = env.step({"score": score})
 
-        print(f"Task {task_id} ({label}) Score: {ai_score:.2f}")
-        print(f" → keyword:{keyword_score:.2f}, length:{length_score:.2f}, depth:{depth_score:.2f}\n")
+            steps += 1
+            total_score += score
 
-        total_score += ai_score
+            print(f"[STEP] step={steps} reward={score}", flush=True)
 
-    final = total_score / len(task_ids)
-    print(f"Final Average Score: {final:.2f}")
+        final_score = round(total_score / steps, 4)
 
+        print(f"[END] task={task_id} score={final_score} steps={steps}", flush=True)
 
-# ── Entry Point ─────────────────────────────────────────────
 
 if __name__ == "__main__":
     run()
