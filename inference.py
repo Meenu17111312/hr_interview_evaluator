@@ -5,26 +5,32 @@ from env import HRInterviewEnv
 
 def get_llm_score(client, model, question, answer):
     prompt = f"""
-    Evaluate this answer for the question.
+Evaluate the answer for the given question.
 
-    Question: {question}
-    Answer: {answer}
+Question: {question}
+Answer: {answer}
 
-    Give a score between 0 and 1.
-    Only return a number.
-    """
+Return ONLY a number between 0 and 1.
+Do not return anything else.
+"""
 
     try:
         response = client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],
+            timeout=20
         )
 
-        score = float(response.choices[0].message.content.strip())
+        text = response.choices[0].message.content.strip()
+
+        # ✅ SAFE PARSING
+        score = float(text.split()[0])
+
         return max(0.0, min(score, 1.0))
 
-    except:
-        return 0.5  # fallback
+    except Exception as e:
+        print(f"Error: {e}", flush=True)
+        return 0.5
 
 
 def run():
@@ -33,7 +39,8 @@ def run():
         api_key=os.environ["API_KEY"]
     )
 
-    model = "gpt-4o-mini"
+    # ✅ SAFE MODEL NAME
+    model = os.environ.get("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")
 
     env = HRInterviewEnv(shuffle=False)
     tasks = env.available_tasks()
@@ -47,7 +54,7 @@ def run():
 
         done = False
         steps = 0
-        total_score = 0
+        total_score = 0.0
 
         while not done:
             score = get_llm_score(
@@ -64,7 +71,7 @@ def run():
 
             print(f"[STEP] step={steps} reward={score}", flush=True)
 
-        final_score = round(total_score / steps, 4)
+        final_score = round(total_score / max(steps, 1), 4)
 
         print(f"[END] task={task_id} score={final_score} steps={steps}", flush=True)
 
